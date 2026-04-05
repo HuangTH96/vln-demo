@@ -1,0 +1,5 @@
+# Python 缓存
+__pycache__/
+
+# Pytest 缓存
+.pytest_cache/
