@@ -1,5 +1,4 @@
 import airsim
-import math
 import time
 import base64
 import json
@@ -19,9 +18,8 @@ HOVER_DURATION     = 3.0    # 到达航点后悬停时间 s
 IMAGE_CAMERA_ID    = "0"    # AirSim 相机 ID
 
 # == High level planner: Qwen_vl_max
-# TODO: VLM更适合输出绝对坐标,也就是如果起步时是(0,0,-3)
-# 那么前进5米,最好输出是(5,0,-3)
-SYSTEM_PROMPT = """
+# 以悬停点为原点，VLM输出相对于原点的绝对坐标
+SYSTEM_PROMPT_ABS = """
 你是一个无人机飞行控制助手。
 用户会给你一段自然语言指令和当前无人机的状态信息，以及当前视角的图像。
 你需要根据指令，生成一系列三维航点（waypoints）供无人机执行。
@@ -63,6 +61,53 @@ action_after 可选值：
 注意：
 - 严格返回JSON，不包含任何Markdown代码块标记（如 ```json）或解释性文字
 - 如果指令不清晰，返回原地顺时针旋转一圈的航点序列
+- 输出航点中，忽略当前位置
+"""
+
+# 以悬停点为原点，VLM输出相对于原点的相对运动
+SYSTEM_PROMPT_REL = """
+你是一个无人机飞行控制助手。
+用户会给你一段自然语言指令和当前无人机的状态信息，以及当前视角的图像。
+你需要根据指令，生成一系列三维航点（waypoints）供无人机执行。
+
+坐标系说明（AirSim NED坐标系）：
+- X轴：正方向为前进方向
+- Y轴：正方向为向右移动
+- Z轴：负方向为向上（z=-5 表示在起点上方5米处，z=0 表示与起点同高）
+
+航点坐标规则（重要）：
+- 用户输入位置作为坐标原点，你输出的每个航点，描述的是相对于原点的的运动距离
+- 例如：从当前位置（用户输入：（0.0, 0.0,-3.0）出发，先上升3米后，前进5米，再继续前进4米，再向右1米：
+    第1个航点: x=5.0, y=0.0, z=-3.0   （相对于当前位置前进5米，同时上升3米）
+    第2个航点: x=9.0, y=0.0, z=-3.0   （相对于第1个航点，再前进9米，上升3米）
+    第3个航点: x=9.0, y=1.0, z=-3.0   （相对于第2个航点，再前进9米，向右1米，上升3米）
+
+输出格式要求（严格JSON，不要有任何多余文字）：
+{
+  "waypoints": [
+    {"x": 5.0, "y": 0.0, "z": -3.0, "description": "上升3米并前进5米"},
+    {"x": 9.0, "y": 0.0, "z": -3.0,  "description": "上升3米，并前进9米"},
+    {"x": 9.0, "y": 1.0, "z": -3.0,  "description": "向右移动1米，上升3米，并前进9米"}
+  ],
+  "action_after": "hover",
+  "summary": "上升3米，向前飞9米，再右移1米，3个航点"
+}
+
+action_after 可选值：
+- "hover"  : 完成后悬停
+- "land"   : 完成后降落
+- "return" : 完成后返回起点(0, 0, 0)
+
+航点规划原则：
+- 转向或曲线路径时，增加中间航点保证路径平滑
+- 每个航点需要有清晰的description说明该段动作
+- 单段移动距离建议不超过10米
+- 输出航点个数诗情况而定，不少于3个
+
+注意：
+- 严格返回JSON，不包含任何Markdown代码块标记（如 ```json）或解释性文字
+- 如果指令不清晰，返回原地顺时针旋转一圈的航点序列
+- 输出航点中，忽略当前位置
 """
 
 # == utils: retrive image and convert to base64 for transmission
@@ -125,7 +170,7 @@ def calling_qwen(
     })
 
     messages = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": SYSTEM_PROMPT_ABS},
         {"role": "user",   "content": user_content},
     ]
     
@@ -162,3 +207,21 @@ def parse_waypoints_from_vlm(
 
     plan = json.loads(raw[start:end])
     return plan
+
+def plan2path(plan:dict) -> list:
+    """
+    将 VLM 输出的 plan 转换为 AirSim 的 path（list of Vector3r）
+    """
+    waypoints = plan.get("waypoints", [])
+    print(f"\nTotal {len(waypoints)} points!\n")
+
+    path = []
+    for wp in waypoints:
+        path.append(airsim.Vector3r(
+            wp["x"],
+            wp["y"],
+            wp["z"]
+        ))
+
+    print(f"Path is:\n{path}\n")
+    return path
