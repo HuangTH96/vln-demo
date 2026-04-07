@@ -102,7 +102,6 @@ def test_moveToPositionAsync():
     assert abs((position2.y_val - init_position.y_val) - (dy1 + dy2)) < tolerance_total
     assert abs((position2.z_val - init_position.z_val) - (dz1 + dz2)) < tolerance_total
 
-
 def test_simGetImage():
     # 返回的是bytes
     png_bytes = airsim_client.simGetImage("0", airsim.ImageType.Scene)
@@ -117,40 +116,23 @@ def test_simGetImage():
     png_url = base64.b64encode(png_bytes).decode('utf-8')
     assert isinstance(png_url, str)
 
-# def reset_after_test(airsim_client):
-#     airsim_client.moveToPositionAsync(
-#         0, 0, -3,
-#         velocity=3.0,
-#         timeout_sec=30,
-#         drivetrain=airsim.DrivetrainType.ForwardOnly,
-#         yaw_mode=airsim.YawMode(False, 0)
-#     ).join()
-#     time.sleep(2)
+def test_moveOnPathAsync():
+    # 根据AirSim cpp源码可知，path是list of Vector3r
+    init_position = airsim_client.getMultirotorState().kinematics_estimated.position
 
-# def take_one_step(airsim_client, curr_position, dx=5.0, dy=0.0, dz=0.0, vel=1.0):
-#     """ 默认向前运动5m """
+    path = [
+        airsim.Vector3r(5,0,-5),
+        airsim.Vector3r(8,0,-5),
+        airsim.Vector3r(8,0,-9),
+        airsim.Vector3r(8,-8,-9),
+        airsim.Vector3r(5,-8,-9),
+        airsim.Vector3r(5,0,-5)
+    ]
+    airsim_client.moveOnPathAsync(path, velocity=1)
 
-#     # 防止在采取动作之前，飞行器就已经发生漂移
-#     curr_position_1 = airsim_client.getMultirotorState().kinematics_estimated.position
-#     assert curr_position.x_val == curr_position_1.x_val, "Before taking step, x_position is changed!"
-#     assert curr_position.y_val == curr_position_1.y_val, "Before taking step, y_position is changed!"
-#     assert curr_position.z_val == curr_position_1.z_val, "Before taking step, z_position is changed!"
-#     # print(f"\nBefore moving, position is:\n-x: {curr_position_1.x_val}\n-y: {curr_position_1.y_val}\n-z: {curr_position_1.z_val}\n")
-#     # print(f"\nNeed to move\n-x:{dx},\n-y:{dy},\n-z:{dz}\n")
-#     # print(f"Consider current position, move to\n-x:{curr_position.x_val + dx}\n-y:{curr_position.y_val + dy}\n-z:{curr_position.z_val + dz}\n")
+    final_position = airsim_client.getMultirotorState().kinematics_estimated.position
 
-#     airsim_client.moveToPositionAsync(
-#         curr_position.x_val + dx,   # 查看 test_moveToPositionAsync 
-#         curr_position.y_val + dy,
-#         curr_position.z_val + dz,
-#         velocity=vel,
-#         timeout_sec=30,
-#         drivetrain=airsim.DrivetrainType.ForwardOnly,
-#         yaw_mode=airsim.YawMode(False, 0)
-#     ).join()
-
-#     # 查看PX4的执行效果
-#     position = airsim_client.getMultirotorState().kinematics_estimated.position
-#     # print(f"After moving, position is: \n-x: {position.x_val}\n-y: {position.y_val}\n-z: {position.z_val}\n")
-
-#     return position
+    tol = 0.5
+    assert abs(final_position.x_val - init_position.x_val) < tol, "x方向误差过大，超过阈值{tol}\n"
+    assert abs(final_position.y_val - init_position.y_val) < tol, "y方向误差过大，超过阈值{tol}\n"
+    assert abs(final_position.z_val - init_position.z_val) < tol, "z方向误差过大，超过阈值{tol}\n"
