@@ -119,16 +119,20 @@ def test_simGetImage():
 def test_moveOnPathAsync():
     # 根据AirSim cpp源码可知，path是list of Vector3r
     init_position = airsim_client.getMultirotorState().kinematics_estimated.position
-
+    print(f"initial positions are: \n-x:{init_position.x_val}\n-y:{init_position.y_val}\n-z:{init_position.z_val}")
+    
+    # 所有位移都相对于开始执行任务时的位置，为绝对值
     path = [
-        airsim.Vector3r(5,0,-5),
-        airsim.Vector3r(8,0,-5),
-        airsim.Vector3r(8,0,-9),
+        airsim.Vector3r(5,0,-5),    # 从起飞后的位置开始，45度爬坡（x正方向，即前进5m，z负方向，即上升5m）
+        airsim.Vector3r(8,0,-5),    # 仍然从起飞后的位置开始计算数值，但减去前一次的运动，因此，实际效果为：前进3米
+        airsim.Vector3r(8,0,-9),    # 同理，从前一次的位置开始计算，上升4米
         airsim.Vector3r(8,-8,-9),
         airsim.Vector3r(5,-8,-9),
         airsim.Vector3r(5,0,-5)
     ]
     airsim_client.moveOnPathAsync(path, velocity=1)
+    after_move = airsim_client.getMultirotorState().kinematics_estimated.position
+    print(f"after movements, the positions are: \n-x:{after_move.x_val}\n-y:{after_move.y_val}\n-z:{after_move.z_val}")
 
     final_position = airsim_client.getMultirotorState().kinematics_estimated.position
 
