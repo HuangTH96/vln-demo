@@ -3,3 +3,5 @@ __pycache__/
 
 # Pytest 缓存
 .pytest_cache/
+
+.vscode
