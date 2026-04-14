@@ -111,7 +111,7 @@ action_after 可选值：
 """
 
 # == utils: retrive image and convert to base64 for transmission
-def get_scene_image(client: airsim.MultirotorClient) -> Tuple[bytes, str]:
+def get_scene_image_sim(client: airsim.MultirotorClient) -> Tuple[bytes, str]:
     """
     从 AirSim 获取当前场景图像
     返回: (numpy图像, base64字符串)
@@ -125,7 +125,7 @@ def get_scene_image(client: airsim.MultirotorClient) -> Tuple[bytes, str]:
     return img_base64
 
 # == utils: retrive drone states
-def get_drone_state(client: airsim.MultirotorClient, diff_flatness_variable = False) -> dict:
+def get_drone_state_sim(client: airsim.MultirotorClient, diff_flatness_variable = False) -> dict:
     """ 获取无人机当前的位置、速度和3D姿态，或者4D微分平坦变量"""
     state = client.getMultirotorState()
     position   = state.kinematics_estimated.position

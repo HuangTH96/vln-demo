@@ -5,7 +5,7 @@ import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 from openai import OpenAI
-from vln_demo.utils import get_scene_image, get_drone_state, parse_waypoints_from_vlm, plan2path
+from vln_demo.utils import get_scene_image_sim, get_drone_state_sim, parse_waypoints_from_vlm, plan2path
 
 import logging
 
@@ -41,8 +41,8 @@ qwen_model = OpenAI(
                     )  
 
 # build input(current viewpoint and drone states) to qwen model
-img_base64 = get_scene_image(client)         
-init_state = get_drone_state(client, diff_flatness_variable)
+img_base64 = get_scene_image_sim(client)         
+init_state = get_drone_state_sim(client, diff_flatness_variable)
 logging.info(f"\nInitial positions are: {init_state}\n")
 
 # retrive waypoints from qwen returns
