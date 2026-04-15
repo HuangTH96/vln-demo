@@ -4,7 +4,7 @@ import os
 import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from openai import OpenAI
-from vln_demo.utils import build_prompt, get_scene_image_sim, parse_response, wps2path
+from vln_demo.utils import build_prompt, get_response, get_scene_image_sim, parse_response, wps2path
 import logging
 logging.basicConfig(level=logging.INFO)
 from config import Config
@@ -25,7 +25,7 @@ client.takeoffAsync().join()
 time.sleep(2)
 
 # create qwen_model for calling api
-qwen_model = OpenAI(
+qwen_client = OpenAI(
                     api_key=Config.QWEN_API_KEY,
                     base_url=Config.QWEN_BASE_URL,
                     )  
@@ -53,9 +53,8 @@ while True:
         # build input(current viewpoint and drone states) to qwen model
         img_base64 = get_scene_image_sim(client)
         prompt = build_prompt(instruct, img_base64)
-
-        # retrieve waypoints from qwen returns
-        waypoints, speed = parse_response(prompt, img_base64, qwen_model)
+        response = get_response(prompt, qwen_client, Config.QWEN_MODEL)
+        waypoints, speed = parse_response(response)
         path = wps2path(waypoints)
 
         client.moveOnPathAsync(path, velocity=speed).join()
