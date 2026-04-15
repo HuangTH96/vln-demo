@@ -172,10 +172,12 @@ def wps2path(waypoints) -> list:
 
 # ========== tello ========
 import numpy as np
+import cv2
 
 def get_scene_image_tello(tello):
     """
-        Tello视频流是基于UDP传输的，需要一段时间才能渲染出画面
+    获取 Tello 视频帧并转换为 base64 字符串
+    Tello 视频流是基于 UDP 传输的，需要一段时间才能渲染出画面面
     """
     frame_reader = tello.get_frame_read()
     start_time = time.time()
@@ -184,7 +186,9 @@ def get_scene_image_tello(tello):
         frame = frame_reader.frame
         # 判定标准：帧不为空且不是全黑（平均像素值大于阈值）
         if frame is not None and np.mean(frame) > 5:
-            return frame
+            _, buffer = cv2.imencode('.png', frame)
+            img_base64 = base64.b64encode(buffer).decode('utf-8')
+            return img_base64
         
         # 防止死循环：超过 5 秒还没画面就报错
         if time.time() - start_time > 5:
