@@ -41,13 +41,10 @@ def build_prompt(
     return prompt
 
 def get_response(
-    instruction: str,
-    img_base64: str,
+    prompt,
     qwen_client,
     qwen_model="qwen-vl-max"
 ) -> dict:
-    prompt = build_prompt(instruction, img_base64)
-
     logging.info(f"\nCalling qwen...\n")
     start = time.time()
     response = qwen_client.chat.completions.create(
@@ -62,17 +59,11 @@ def get_response(
     return response
 
 def parse_response(
-    instruction: str,
-    img_base64: str,
-    qwen_client,
-    qwen_model="qwen-vl-max"
+    response
 ) -> dict:
     """
     调用 Qwen-VL API，根据指令、无人机状态和图像生成航点
     """
-    
-    # response = calling_qwen(instruction, drone_state, img_base64, qwen_client)
-    response = get_response(instruction, img_base64, qwen_client, qwen_model)
     raw = response.choices[0].message.content.strip()
 
     start = raw.find('{')
