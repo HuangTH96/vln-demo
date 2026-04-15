@@ -7,7 +7,7 @@ from openai import OpenAI
 from vln_demo.utils import build_prompt, get_response, get_scene_image_sim, parse_response, wps2path
 import logging
 logging.basicConfig(level=logging.INFO)
-from config import Config
+from config.conf import Config
 
 
 INSTRUCT = "飞到面前路灯左侧，与路灯保持平行"
