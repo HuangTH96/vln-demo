@@ -9,11 +9,6 @@ import logging
 logging.basicConfig(level=logging.INFO)
 from config.conf import Config
 
-
-INSTRUCT = "飞到面前路灯左侧，与路灯保持平行"
-# INSTRUCT = "飞到前方路灯右侧，悬停3秒后，继续前进至红绿灯口"
-# INSTRUCT = "绕面前电线杆一圈后，停靠在第一个长椅上"
-
 # connect to the AirSim simulator
 client = airsim.MultirotorClient()
 client.confirmConnection()
@@ -54,9 +49,15 @@ while True:
         img_base64 = get_scene_image_sim(client)
         prompt = build_prompt(instruct, img_base64)
         response = get_response(prompt, qwen_client, Config.QWEN_MODEL)
-        waypoints, speed = parse_response(response)
+        waypoints, _ = parse_response(response)
         path = wps2path(waypoints)
 
+        client.enableApiControl(False)
+        time.sleep(0.5)
+        client.enableApiControl(True)
+        time.sleep(0.5)
+
+        speed = 1.0
         client.moveOnPathAsync(path, velocity=speed).join()
 
         after_move = client.getMultirotorState().kinematics_estimated.position
