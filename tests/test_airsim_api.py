@@ -105,7 +105,13 @@ def test_moveToPositionAsync(airsim_client):
     assert abs((position2.y_val - init_position.y_val) - (dy1 + dy2)) < tolerance_total
     assert abs((position2.z_val - init_position.z_val) - (dz1 + dz2)) < tolerance_total
 
-def test_simGetImage():
+def test_simGetImage(airsim_client):
+    """
+    函数特征：
+
+    - 返回bytes格式数据
+    - 可以转变成numpy、png、base64
+    """
     # 返回的是bytes
     png_bytes = airsim_client.simGetImage("0", airsim.ImageType.Scene)
     assert isinstance(png_bytes, bytes)
@@ -120,11 +126,16 @@ def test_simGetImage():
     assert isinstance(png_url, str)
 
 def test_moveOnPathAsync(airsim_client):
-    # 根据AirSim cpp源码可知，path是list of Vector3r
+    """
+    函数特点：
+
+    - 以当前位置作为原点，所有的waypoints都是相对于原点的绝对坐标
+    - 连续动作时，需要重新授权ApiControl
+    - 根据AirSim cpp源码可知，path是list of Vector3r
+    """
     # init_position = airsim_client.getMultirotorState().kinematics_estimated.position
     # print(f"initial positions are: \n-x:{init_position.x_val}\n-y:{init_position.y_val}\n-z:{init_position.z_val}")
     
-    # 所有位移都相对于开始执行任务时的位置，为绝对坐标
     # 该path是一个闭环，运动完后应该能回到第一个waypoint处
     path = [
         airsim.Vector3r(5,0,-5),    # 从起飞后的位置开始，45度爬坡（x正方向，即前进5m，z负方向，即上升5m）
