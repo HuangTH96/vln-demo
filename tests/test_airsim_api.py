@@ -4,6 +4,7 @@ import base64
 import cv2
 import time
 import warnings
+import pytest
 
 def initialize():
     """
@@ -29,9 +30,12 @@ def initialize():
                     x: {position_after.x_val - position.x_val}\n \
                     y: {position_after.y_val - position.y_val}\n ")
     return airsim_client
-airsim_client = initialize()
 
-def test_moveToPositionAsync():
+@pytest.fixture(scope="module")
+def airsim_client():
+    return initialize()
+
+def test_moveToPositionAsync(airsim_client):
     """
     函数特点：
     
@@ -115,12 +119,13 @@ def test_simGetImage():
     png_url = base64.b64encode(png_bytes).decode('utf-8')
     assert isinstance(png_url, str)
 
-def test_moveOnPathAsync():
+def test_moveOnPathAsync(airsim_client):
     # 根据AirSim cpp源码可知，path是list of Vector3r
     # init_position = airsim_client.getMultirotorState().kinematics_estimated.position
     # print(f"initial positions are: \n-x:{init_position.x_val}\n-y:{init_position.y_val}\n-z:{init_position.z_val}")
     
-    # 所有位移都相对于开始执行任务时的位置，为绝对值
+    # 所有位移都相对于开始执行任务时的位置，为绝对坐标
+    # 该path是一个闭环，运动完后应该能回到第一个waypoint处
     path = [
         airsim.Vector3r(5,0,-5),    # 从起飞后的位置开始，45度爬坡（x正方向，即前进5m，z负方向，即上升5m）
         airsim.Vector3r(8,0,-5),    # 仍然从起飞后的位置开始计算数值，但减去前一次的运动，因此，实际效果为：前进3米
@@ -132,16 +137,34 @@ def test_moveOnPathAsync():
 
     airsim_client.moveOnPathAsync(path, velocity=1).join()  # 必须加.join()，否则还没等运动结束，就得到after_move坐标
     after_move = airsim_client.getMultirotorState().kinematics_estimated.position
-    print(f"after movements, the positions are: \n-x:{after_move.x_val}\n-y:{after_move.y_val}\n-z:{after_move.z_val}")
+    print(f"after movements, the positions are: \n-x:{after_move.x_val}\n-y:{after_move.y_val}\n-z:{after_move.z_val}\n")
 
-    final_position = airsim_client.getMultirotorState().kinematics_estimated.position
+    position = airsim_client.getMultirotorState().kinematics_estimated.position
 
     tol = 0.5
-    if abs(final_position.x_val - 5.0) >= tol:
+    if abs(position.x_val - 5.0) >= tol:
         warnings.warn(f"x方向误差过大，超过阈值{tol}\n")
 
-    if abs(final_position.y_val - 5.0) >= tol:
+    if abs(position.y_val - 5.0) >= tol:
         warnings.warn(f"y方向误差过大，超过阈值{tol}\n")
 
-    if abs(final_position.z_val - 5.0) >= tol:
+    if abs(position.z_val - 5.0) >= tol:
         warnings.warn(f"z方向误差过大，超过阈值{tol}\n")
+    
+    print(f"After first round, uav's position is: \n-x:{position.x_val}\n-y:{position.y_val}\n-z:{position.z_val}\n")
+
+    # 连续调用moveOnPathAsync需要重置ApiControl权限
+    airsim_client.enableApiControl(False)
+    time.sleep(0.5)
+    airsim_client.enableApiControl(True)
+    time.sleep(0.5)
+
+    print("Implementing the second round of moveOnPathAsync...\n")
+    # 检测是否能够连续执行
+    path_2 = [
+        airsim.Vector3r(-5,8,-10),    
+        airsim.Vector3r(-8,8,-10),
+    ]
+    airsim_client.moveOnPathAsync(path_2, velocity=1).join()
+    after_move_2 = airsim_client.getMultirotorState().kinematics_estimated.position
+    print(f"after movements, the positions are: \n-x:{after_move_2.x_val}\n-y:{after_move_2.y_val}\n-z:{after_move_2.z_val}")
