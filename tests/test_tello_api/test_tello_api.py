@@ -17,6 +17,7 @@ print(f"当前电量：{tello.get_battery()}")
 
 - 单位为cm/s
 - x正方向为前进；y正方向为向右移动；z正方向向上
+- 依赖 VPS（视觉定位系统），底部摄像头需要能看清地面纹理才能做位置估计，否则会出现error: no valid imu
 """
 # 以50cm/s的速度前进1m
 print("前进1m...")
