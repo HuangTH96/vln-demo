@@ -127,7 +127,7 @@ while not stop_event.is_set():  # 支持从视频窗口出发退出
 
         # ======== execution ========
         # safe_speed = max(10, min(int(speed * 100), 100))  # Tello 速度单位为 cm/s，范围 10~100
-        safe_speed = 10
+        safe_speed = 50
         for wp in waypoints:
             tello.go_xyz_speed(
                 int(wp["x"]),
