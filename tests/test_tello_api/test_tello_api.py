@@ -21,7 +21,7 @@ print(f"当前电量：{tello.get_battery()}")
 """
 # 以50cm/s的速度前进1m
 print("前进1m...")
-tello.go_xyz_speed(130, 0, 0, 50)
+tello.go_xyz_speed(230, 0, 0, 80)
 # 以50cm/s的速度向左移动70cm
 print("向左移动30cm...")
 tello.go_xyz_speed(0, 70, 0, 50)
