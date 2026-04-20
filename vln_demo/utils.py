@@ -92,36 +92,39 @@ def parse_response(
 # ========== airsim =========
 from config.conf import Config
 import base64
-# import airsim 
+import airsim 
 
-# def get_scene_image_sim(client: airsim.MultirotorClient) -> Tuple[bytes, str]:
-#     """
-#     从 AirSim 获取当前场景图像
-#     返回: (numpy图像, base64字符串)
-#     """
-#     # 返回 PNG 格式的原始字节数据（bytes）
-#     png_image = client.simGetImage(Config.IMAGE_CAMERA_ID, airsim.ImageType.Scene)
+def get_scene_image_sim(client: airsim.MultirotorClient) -> Tuple[bytes, str]:
+    """
+    从 AirSim 获取当前场景图像
+    返回: (numpy图像, base64字符串)
+    """
+    # 返回 PNG 格式的原始字节数据（bytes）
+    png_image = client.simGetImage(Config.IMAGE_CAMERA_ID, airsim.ImageType.Scene)
 
-#     # PNG 字节直接 base64 编码
-#     img_base64 = base64.b64encode(png_image).decode('utf-8')
-#     return img_base64
+    # PNG 字节直接 base64 编码
+    img_base64 = base64.b64encode(png_image).decode('utf-8')
+    return img_base64
 
-# def wps2path(waypoints) -> list:
-#     """
-#     将 VLM 输出的 waypoints 转换为 AirSim 的 path（list of Vector3r）
-#     """
-#     print(f"\nTotal {len(waypoints)} points!\n")
+def wps2path(waypoints) -> list:
+    """
+    将 VLM 输出的 waypoints 转换为 AirSim 的 path（list of Vector3r）
+    """
+    print(f"\nTotal {len(waypoints)} points!\n")
 
-#     path = []
-#     for wp in waypoints:
-#         path.append(airsim.Vector3r(
-#             wp["x"],
-#             wp["y"],
-#             wp["z"]
-#         ))
+    path = []
+    for i, wp in enumerate(waypoints):
+        assert wp.keys() == Config.REQUIRED_WAYPOINT_KEYS, \
+            f"航点[{i}] 字段不匹配，期望: {Config.REQUIRED_WAYPOINT_KEYS}，实际: {set(wp.keys())}"
+        
+        path.append(airsim.Vector3r(
+            wp["x"],
+            wp["y"],
+            wp["z"]
+        ))
 
-#     print(f"Path is:\n{path}\n")
-#     return path
+    print(f"Path is:\n{path}\n")
+    return path
 
 SYSTEM_PROMPT_SIM = """
 你是一个无人机飞行控制助手。

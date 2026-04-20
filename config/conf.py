@@ -9,6 +9,8 @@ class Config:
     HOVER_DURATION     = 3.0    # 到达航点后悬停时间 s
     IMAGE_CAMERA_ID    = "0"    # AirSim 相机 ID
 
+    REQUIRED_WAYPOINT_KEYS = {"x","y","z","description"}
+
     # qwen
     QWEN_API_KEY  = os.environ["QWEN_VLM_KEY"]
     QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"

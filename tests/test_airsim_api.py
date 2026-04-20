@@ -24,11 +24,16 @@ def initialize():
     # record position after taking off
     position_after = airsim_client.getMultirotorState().kinematics_estimated.position
     print(f"After taking off, position is: \n-x: {position_after.x_val}\n-y: {position_after.y_val}\n-z: {position_after.z_val}\n")
-    time.sleep(3)
+    # time.sleep(3)
     
-    print(f"Taking off introduces position error in x and y direction! \n \
-                    x: {position_after.x_val - position.x_val}\n \
-                    y: {position_after.y_val - position.y_val}\n ")
+    # print(f"Taking off introduces position error in x and y direction! \n \
+    #                 x: {position_after.x_val - position.x_val}\n \
+    #                 y: {position_after.y_val - position.y_val}\n ")
+
+    prepare_time = 3
+    print(f"{prepare_time}秒后，即将执行测试任务...\n")
+    time.sleep(prepare_time)
+    
     return airsim_client
 
 @pytest.fixture(scope="module")
@@ -129,7 +134,7 @@ def test_moveOnPathAsync(airsim_client):
     """
     函数特点：
 
-    - 以当前位置作为原点，所有的waypoints都是相对于原点的绝对坐标
+    - 将**出生点**作为原点，所有的waypoints都是相对于原点的绝对坐标
     - 连续动作时，需要重新授权ApiControl
     - 根据AirSim cpp源码可知，path是list of Vector3r
     """
@@ -138,12 +143,13 @@ def test_moveOnPathAsync(airsim_client):
     
     # 该path是一个闭环，运动完后应该能回到第一个waypoint处
     path = [
-        airsim.Vector3r(5,0,-5),    # 从起飞后的位置开始，45度爬坡（x正方向，即前进5m，z负方向，即上升5m）
-        airsim.Vector3r(8,0,-5),    # 仍然从起飞后的位置开始计算数值，但减去前一次的运动，因此，实际效果为：前进3米
-        airsim.Vector3r(8,0,-9),    # 同理，从前一次的位置开始计算，上升4米
-        airsim.Vector3r(8,-8,-9),
-        airsim.Vector3r(5,-8,-9),
-        airsim.Vector3r(5,0,-5)
+        airsim.Vector3r(0,0,0),     # 因为是相对于出生点运动，所以这个路径会从起飞位置回到出生位置，
+        airsim.Vector3r(0,0,-3),    # 返回到起飞后的位置
+
+        airsim.Vector3r(3,0,-3),    # 向前移动3m
+        airsim.Vector3r(3,-3,-3),   # 再向左移动3m
+        airsim.Vector3r(3,-3,-5),   # 再升高2m
+        airsim.Vector3r(0,-3,-3),    # 飞到相对于起始位置左侧3m处
     ]
 
     airsim_client.moveOnPathAsync(path, velocity=1).join()  # 必须加.join()，否则还没等运动结束，就得到after_move坐标
@@ -172,9 +178,9 @@ def test_moveOnPathAsync(airsim_client):
 
     print("Implementing the second round of moveOnPathAsync...\n")
     # 检测是否能够连续执行
+    # 第二轮仍然相对于出生位置运动，仍然是绝对坐标？
     path_2 = [
-        airsim.Vector3r(-5,8,-10),    
-        airsim.Vector3r(-8,8,-10),
+        airsim.Vector3r(0,0,-6),    # 既不是原地上升6米，也不是到起飞位置上方6米，而是到出生位置上方6米,也就是起飞位置上方3米   
     ]
     airsim_client.moveOnPathAsync(path_2, velocity=1).join()
     after_move_2 = airsim_client.getMultirotorState().kinematics_estimated.position
