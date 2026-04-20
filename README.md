@@ -12,3 +12,10 @@
 - 像素作为目标会出现无法正确识别障碍物的问题，比如误将篮球场的网眼当作可通行区域
 - tello版本中的d_adj逻辑很粗糙，因为vlm对深度的估计本来就不准，平方以后，误差更大了
 - execution_action动作执行太粗糙：1、偏航误差会累积 ；2、前进时没有修正机制；3、路径是折现，运动轨迹不光滑，且在动作切换时可能位于危险区域（风大、光弱导致悬停不稳等问题）
+
+
+# 测试
+```
+cd vln-demo/tests/
+python -s -m pytest /test_tello_api/test_tello_api.py::<test_function_name>
+```
