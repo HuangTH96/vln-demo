@@ -4,7 +4,7 @@ import os
 import time
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from openai import OpenAI
-from vln_demo.utils import build_prompt, get_response, get_scene_image_sim, parse_response, wps2path
+from vln_demo.utils import build_prompt, get_response, get_scene_image_sim, parse_response, rel2abs, wps2path
 import logging
 logging.basicConfig(level=logging.INFO)
 from config.conf import Config
@@ -18,6 +18,7 @@ client.armDisarm(True)
 # take off and keep hover
 client.takeoffAsync().join()
 time.sleep(2)
+cur_position = client.getMultirotorState().kinematics_estimated.position
 
 # create qwen_model for calling api
 qwen_client = OpenAI(
@@ -49,9 +50,9 @@ while True:
         img_base64 = get_scene_image_sim(client)
         prompt = build_prompt(instruct, img_base64)
         response = get_response(prompt, qwen_client, Config.QWEN_MODEL)
-        waypoints, _ = parse_response(response)
-        path = wps2path(waypoints)
-
+        abs_waypoints, _ = parse_response(response, cur_position)
+        path = wps2path(abs_waypoints)
+        
         client.enableApiControl(False)
         time.sleep(0.5)
         client.enableApiControl(True)
@@ -63,6 +64,7 @@ while True:
         after_move = client.getMultirotorState().kinematics_estimated.position
         print(f"指令执行完成，当前位置：\n  x: {after_move.x_val:.2f}\n  y: {after_move.y_val:.2f}\n  z: {after_move.z_val:.2f}")
         print("请继续下达指令，或输入 q 退出。")
+        cur_position = after_move
 
     except Exception as e:
         logging.error(f"执行指令时出错：{e}")

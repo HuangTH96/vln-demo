@@ -67,7 +67,8 @@ def get_response(
     return response
 
 def parse_response(
-    response
+    response,
+    cur_position
 ) -> dict:
     """
     调用 Qwen-VL API，根据指令、无人机状态和图像生成航点
@@ -84,10 +85,11 @@ def parse_response(
     waypoints = plan.get("waypoints", [])
     if not waypoints:
         raise ValueError(f"VLM 没有输出航点！")
-
+    
+    abs_waypoints = rel2abs(waypoints, cur_position)
     speed = plan.get("speed", 0.0)
 
-    return waypoints, speed
+    return abs_waypoints, speed
 
 # ========== airsim =========
 from config.conf import Config
@@ -106,6 +108,24 @@ def get_scene_image_sim(client: airsim.MultirotorClient) -> Tuple[bytes, str]:
     img_base64 = base64.b64encode(png_image).decode('utf-8')
     return img_base64
 
+def rel2abs(wps, cur_position):
+    """
+    将 VLM 输出的相对航点转换为 AirSim 绝对坐标（以出生点为原点）
+    
+    current_pos: 本轮指令执行前无人机的当前位置
+    """
+    abs_waypoints = []
+    for i, wp in enumerate(wps):
+        print(f"{i} waypoint: \n-x: {wp['x']}\n-y: {wp['y']}\n-z: {wp['z']}\n{wp['description']}\n")
+
+        abs_waypoints.append({
+            "x": wp["x"] + cur_position.x_val,
+            "y": wp["y"] + cur_position.y_val,
+            "z": wp["z"] + cur_position.z_val,
+            "description": wp["description"]
+        })
+    return abs_waypoints
+
 def wps2path(waypoints) -> list:
     """
     将 VLM 输出的 waypoints 转换为 AirSim 的 path（list of Vector3r）
@@ -117,13 +137,15 @@ def wps2path(waypoints) -> list:
         assert wp.keys() == Config.REQUIRED_WAYPOINT_KEYS, \
             f"航点[{i}] 字段不匹配，期望: {Config.REQUIRED_WAYPOINT_KEYS}，实际: {set(wp.keys())}"
         
+        print(f"{i+1} abs_waypoint: \n-x: {wp['x']}\n-y: {wp['y']}\n-z: {wp['z']}\n{wp['description']}\n")
+        
         path.append(airsim.Vector3r(
             wp["x"],
             wp["y"],
             wp["z"]
         ))
 
-    print(f"Path is:\n{path}\n")
+    # print(f"Path is:\n{path}\n")
     return path
 
 SYSTEM_PROMPT_SIM = """
@@ -136,7 +158,7 @@ SYSTEM_PROMPT_SIM = """
 - Y轴：正方向为向右移动
 - Z轴：负方向为向上（z=-5 表示在起点上方5米处，z=0 表示与起点同高）
 
-航点坐标规则（重要）：
+航点坐标规则（重要）： 
 - 你输出的每个航点，描述的是相对于当前位置的坐标，坐标系单位为米
 - 例如：从当前位置出发，先上升3米后，前进5米，再继续前进4米，再向右1米：
     第1个航点: x=5.0, y=0.0, z=-3.0   （从当前位置前进5米，同时上升3米）
