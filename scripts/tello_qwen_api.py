@@ -72,18 +72,25 @@ def video_loop():
             break
     cv2.destroyAllWindows()
 
+# ========= 清空responses 队列，防止读取到上一次飞行留下的完成信号，导致不能依次执行go_xyz_speed =======
+def flush_responses(tello):
+    """清空 djitellopy 内部的 responses 队列，避免消费到残留的 ok"""
+    udp_obj = tello.get_own_udp_object()
+    udp_obj['responses'].clear()
+
 # ========= 保活线程 =========
-import socket
+is_tracking_wp = threading.Event()      # 保证飞行时，不会因为保活线程返回的response无染response 队列
+
 def keepalive_loop():
-    """每10秒发一次保活指令，防止 Tello 因超时无指令自动降落"""
-    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    """
+    每10秒发一次保活指令，防止 Tello 因超时无指令自动降落；
+    连续运动时，停止发送保活指令
+    
+    """
     while not stop_event.is_set():
-        try: 
-            sock.sendto(b'command', ('192.168.10.1', 8889))
-        except Exception:
-            pass
+        if not is_tracking_wp.is_set():
+            tello.send_command_without_return('command')
         stop_event.wait(timeout=10)
-    sock.close()
 
 # ========= 先启动视频，确认后起飞 ========
 wait_for_video()
@@ -127,16 +134,23 @@ while not stop_event.is_set():  # 支持从视频窗口出发退出
 
         # ======== execution ========
         # safe_speed = max(10, min(int(speed * 100), 100))  # Tello 速度单位为 cm/s，范围 10~100
-        safe_speed = 50
-        for wp in waypoints:
-            tello.go_xyz_speed(
-                int(wp["x"]),
-                int(wp["y"]),
-                int(wp["z"]),
-                safe_speed
-            )
-            print(f"前往：\n-x:{wp['x']}\n-y:{wp['y']}\n-z:{wp['z']}\n")
-
+        safe_speed = 30
+        is_tracking_wp.set()        # 开始跟踪waypoint，保活线程静默
+        try:
+            for wp in waypoints:
+                flush_responses(tello)
+                print(f"前往：\n-x:{wp['x']}\n-y:{wp['y']}\n-z:{wp['z']}\n")
+                tello.go_xyz_speed(
+                    wp["x"],
+                    wp["y"],
+                    wp["z"],
+                    safe_speed
+                )
+                
+                time.sleep(0.5)
+        finally:
+            is_tracking_wp.clear()      # 全部追踪完成，恢复保活线程
+            
         battery = tello.get_battery()
         print(f"指令执行完成，当前电池电量：{battery}%")
 
