@@ -1,21 +1,7 @@
-# TODO lists
+# QuickStart
 
-## 框架优化
-- 构建QwenAgent，将'build_prompt'、'get_response'和'parse_response'放到一起，作为私有函数，仅保留'call'作为对外接口
-
-
-
-## SPF可以优化的地方
-- 从prompt可以看到，这是一个visual servoing，一步一动，不具备路径规划能力
-- 仅靠single frame，很难真正做到“飞到**旁边**”这个动作，因为无法判断已经多近了
-- 用图像中的y轴坐标修正深度有局限性：前往位于UAV下方物体时非常费力
-- 像素作为目标会出现无法正确识别障碍物的问题，比如误将篮球场的网眼当作可通行区域
-- tello版本中的d_adj逻辑很粗糙，因为vlm对深度的估计本来就不准，平方以后，误差更大了
-- execution_action动作执行太粗糙：1、偏航误差会累积 ；2、前进时没有修正机制；3、路径是折现，运动轨迹不光滑，且在动作切换时可能位于危险区域（风大、光弱导致悬停不稳等问题）
-
-
-# 测试
-```
-cd vln-demo/tests/
-python -s -m pytest /test_tello_api/test_tello_api.py::<test_function_name>
-```
+1. 通过wifi连接笔记本和tello，目前tello的密码是：zhukun314
+2. 查看电量：`check_tello_battery.py`
+3. 查看视频功能：`test_visual_api.py`
+4. 查看图像通道：`test_telloImg.py`
+5. 放在地上，运行: `tello_qwen_api.py`
