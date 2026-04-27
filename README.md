@@ -1,7 +1,7 @@
 # 测试
 ```
 cd vln-demo/tests/
-python -s -m pytest /test_tello_api/test_tello_api.py::<test_function_name>
+python -s -m pytest /test_tello_api/test_airsim_api.py::<test_function_name>
 ```
 
 # QuickStart
