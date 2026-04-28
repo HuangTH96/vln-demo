@@ -1,19 +1,10 @@
-# 测试
-```
-cd vln-demo/tests/
-python -s -m pytest /test_tello_api/test_airsim_api.py::<test_function_name>
-```
+# 说明
+参考Fly0和VLA-AN使用相关数据集对`airsim_qwen_api.py`进行评估，并与选择合适的基线进行比较
 
-# QuickStart
-```
-# airsim中仿真
-cd <path/to/PX4-Autopilote>
-make px4_sitl none_iris
+## Benchmark/Dataset
+1. OpenFly
+2. AerialVLN
 
-~/UnrealEngine/Engine/Binaries/Linux/UE4Editor ~/CityParkEnvironment/CityParkEnvironment.uproject
-# 打开后，在UE中点击Play
 
-cd vln-demo/scripts
-conda activate airsim
-python airsim_qwen_api.py
-```
+## Baseline
+1. OpenFly
