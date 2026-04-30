@@ -6,8 +6,8 @@ class CloudQwenBackend(VLMBackendBase):
 
     def __init__(self, cfg: dict):
         self.client = OpenAI(
-            api_key=cfg.get("api_key") or os.environ["QWEN_API_KEY"],
-            base_url=cfg.get("base_url",
+            api_key = os.environ["QWEN_API_KEY"],
+            base_url=cfg.get("vlm_base_url",
                 "https://dashscope.aliyuncs.com/compatible-mode/v1"),
         )
         self.model_name    = cfg.get("model_name", "qwen-vl-max")

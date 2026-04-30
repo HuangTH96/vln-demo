@@ -9,7 +9,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 from config.conf import Config
 
-# connect to the AirSim simulator
+# connect to the AirSim simulator  -> class AirSimPlatform
 client = airsim.MultirotorClient()
 client.confirmConnection()
 client.enableApiControl(True)

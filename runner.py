@@ -48,6 +48,7 @@ agent = build_system({
     "algo_cfg":    {"platform_type": "airsim"},
 })
 agent.run("飞向前方红色建筑")
+# TODO：从数据集中读取指令和图像
 
 # ── 场景二：HPC离线评估 + Local模型 + SPF ──
 agent = build_system({
