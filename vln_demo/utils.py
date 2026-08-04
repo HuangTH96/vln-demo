@@ -8,6 +8,30 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__),'..'))    # 项目源�
 
 from typing import Tuple
 
+"""
+Windows下VS Code激活conda环境时，只加了Python解释器路径，
+没有完整初始化conda环境的所有PATH（尤其是`Library/bin`下的DLL，
+比如djitellopy依赖的av/ffmpeg动态库），需要手动补上。
+
+Linux/macOS下conda环境激活是完整的，不存在这个问题，此函数在
+非Windows平台上直接跳过。
+
+用 CONDA_PREFIX（conda activate时自动设置的环境变量）代替硬编码的
+盘符路径（如 D:\\anaconda\\envs\\tello），这样换机器、换安装位置都不用改代码。
+"""
+def apply_windows_conda_path_fix() -> None:
+    if sys.platform != "win32":
+        return
+
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    if not conda_prefix:
+        # 没有在conda环境里运行（比如直接用系统python），没法定位Library/bin，跳过
+        return
+
+    lib_bin = os.path.join(conda_prefix, "Library", "bin")
+    if os.path.isdir(lib_bin):
+        os.environ["PATH"] = lib_bin + os.pathsep + os.environ["PATH"]
+
 # ======== common =========
 def build_prompt(
         instruction: str,
