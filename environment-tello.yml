@@ -1,0 +1,27 @@
+name: tello         # <conda环境名称>
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7.12
+  - numpy=1.21.6
+  - pillow=8.4.0
+  - av=8.1.0         # djitellopy 用它解码Tello视频流，Windows下pip装容易因缺ffmpeg开发库编译失败
+  - ffmpeg=4.3.1     # av 的底层依赖
+  - pip=22.3.1
+  - setuptools=65.6.3
+  - wheel=0.38.4
+  - pip:
+      # 注意：djitellopy 自己的 setup.py 声明依赖 av 和 pillow，但没有锁版本。
+      # conda env create 执行 pip 这一段时会自动带 -U（upgrade），
+      # 如果这里不显式锁版本，pip会无视上面conda层已经装好的 av=8.1.0，
+      # 重新去PyPI解析"能满足djitellopy的最新av版本"（通常是没有py3.7预编译wheel的新版），
+      # 进而触发源码编译，在Windows上大概率因为Cython版本不兼容而失败。
+      # 这里显式锁成和conda层一致的版本，pip解析到的目标就是"已经满足"，直接跳过，不会重新拉取/编译。
+      - av==8.1.0
+      - pillow==8.4.0
+      - djitellopy==2.5.0
+      - openai==1.1.0
+      - python-dotenv
+      - opencv-python==4.13.0.92
+      - pytest==7.4.4
