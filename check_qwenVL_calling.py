@@ -8,7 +8,6 @@ import base64
 import cv2
 from openai import OpenAI
 from vln_demo.utils import build_prompt, get_response, parse_response
-from djitellopy import Tello
 from config.conf import Config
 
 # ======== setup qwen model ========
